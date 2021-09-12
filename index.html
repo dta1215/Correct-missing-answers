@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://code.jquery.com/jquery-3.5.1.js"
+    integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+    integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+</head>
+<style>
+    .insert{
+        /* display: none; */
+        animation: fadeIn 6s;
+    }
+    @keyframes fadeIn {
+        0% {opacity: 0}
+        100% {opacity: 1}
+    }
+    .show1{
+        min-height: 50px;
+        text-align: center;
+        font-size: 20px;
+    }
+    .delete-Active{
+        text-decoration: line-through;
+    }
+
+    header{
+        display: none;
+        height: 60px;
+        background-color: firebrick;
+    }
+    .headerContainer{
+        padding-right: 80px;
+        padding-left: 80px;
+    }
+    .mainContainer{
+        padding-right: 80px;
+        padding-left: 80px;
+    }
+</style>
+<body>
+    <header>
+        <div class="headerContainer container-fluid">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="controlContainer">
+                        <a>Home</a>
+                        <a>About</a>
+                        <a>Contact</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    <main class="mainContainer container-fluid">
+        <h3 class="text-center">Auto correct missing word</h3>
+        <hr>
+        <div class="show1"></div>
+        <audio id="correctAudio" src="./audio/correct sound.mp3" hidden></audio>
+        <audio id="inCorrectAudio" src="./audio/incorrect sound.mp3" hidden></audio>
+        <hr>
+        <div class="answerArea container d-flex justify-content-around">
+            <table class="">
+                <tbody>
+                    <tr>
+                        <td>Put answer template</td>
+                        <td>
+                            <input id="answerTemplate" type="text" class="form-control" placeholder="Correct answer template...">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Type your answer</td>
+                        <td>
+                            <input id="userAnswer" type="text" class="form-control" placeholder="Input answer here...">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td>
+                            <button id="btnSubmitAnswer" class="btn btn-sm btn-primary float-right">Submit Answer</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    
+
+    <script>
+        
+        
+        
+        
+        const correctAnswerGame = (function answerGame(){
+            const temp = {
+                clearTemp: function(){
+                    localStorage.clear()
+                },
+                saveTemp: function(template, answer){
+                    temp.clearTemp()
+                    localStorage.setItem('template', template)
+                    localStorage.setItem('answer', answer)
+                },
+                getTemplate: function(){
+                    return localStorage.getItem('template')
+                },
+                getAnswer: function(){
+                    return localStorage.getItem('answer')
+                }
+            }
+
+            function handleAnswer(correct, answer){
+                // const correct = "hi sandro where are you from"
+                // const answer = "dang the anh"
+                // hi sandro where are you from  cat walk on air  down in the dump
+                // toi ten la dang the anh       dang the anh     dang the anh
+
+                const resultHTML = answer.split('').map((char, i)=>{
+                    if(char == " "){
+                        return `<text class="space">${char}<text>`
+                    }
+                    return `<text>${char}<text>`
+                })
+                $('.show1').append(resultHTML)
+
+                const existPhrase = []
+                const resultValue = []
+                let existElement = []
+                let phraseHold = []
+
+                const result = answer.split(' ').map((phrase, i)=>{
+                    correct.split(' ').map((phr2, j)=>{
+                        phr2.split('').map((char)=>{
+                            if(phrase.includes(char) && !existPhrase.includes(phrase) && !existPhrase.includes(phr2)){
+                                // console.log("1:", phrase, phr2, char);
+                                let findChar 
+                                let before, after
+                                
+                                
+                                if(!existElement.includes(char)){
+                                    findChar = $(`.show1 text:contains(${char})`).not('.insert').not('.root').first()
+                                    findChar.addClass('root')
+                                }else{
+                                    findChar = $(`.show1 text:contains(${char})`).not('.insert').not('.root').eq(1)
+                                    findChar.addClass('root')
+                                }
+                            
+                                // Insert correct missing word Section
+                                if(phr2.indexOf(char) == phr2.length){
+                                    findChar.prevAll('text').addClass('delete-Active')
+                                    findChar.prevAll('text').fadeOut(2000, function(){
+                                        $(this).remove()
+                                    })
+                                    before = phr2.slice(0, phr2.indexOf(char))
+                                    findChar.before(`<text class="insert">${before}</text>`)
+                                }
+                                else if (phr2.indexOf(char) == 0){
+                                    findChar.prevUntil('.space').addClass('delete-Active')
+                                    findChar.prevUntil('.space').fadeOut(2000, function(){
+                                        $(this).remove()
+                                    })
+                                    after = phr2.slice(1, phr2.length)
+                                    findChar.after(`<text class="insert">${after}</text>`)
+                                }
+                                else if(phr2.indexOf(char) > 0 && phr2.indexOf(char) < phr2.length)
+                                {
+                                    before = phr2.slice(0, phr2.indexOf(char))
+                                    after = phr2.slice(phr2.indexOf(char) + 1, phr2.length)
+                                    // console.log(before + " " + after );
+
+                                    // console.log(findChar.nextUntil('.space'));
+                                    if(findChar.nextUntil('.space').length > 0){
+                                        findChar.nextUntil('.space').addClass('delete-Active')
+                                        findChar.nextUntil('.space').fadeOut(2000, function(){
+                                            $(this).remove()
+                                        })
+                                    }
+                                    findChar.prevUntil('.space').addClass('delete-Active')
+                                    findChar.prevUntil('.space').fadeOut(3000, function(){
+                                        $(this).remove()
+                                    })
+                                    findChar.before(`<text class="insert">${before}</text>`)
+                                    findChar.after(`<text class="insert">${after}</text>`)
+                                }            
+                                existPhrase.push(phrase)
+                                existPhrase.push(phr2)
+                                findChar.nextUntil('.space').map((i, e)=>{
+                                    existElement.push($(e).text())
+                                })
+                            }
+                        })
+                    })
+                })
+                
+                const template = correct.split(' ').map((phrase, i)=>{
+                    return phrase
+                })
+                let phraseGroup = []
+
+                setTimeout(()=>{
+                    $('.show1').find('text').first().before(`<text class="space"></text>`)
+                    $('.show1').append(`<text class="space"></text>`)
+                    $('.show1').find('.space').map((i, curr)=>{
+                        let group = $(curr).prevUntil('.space')
+                        const res = [...group].some((e,i)=>{
+                            return $(e).hasClass('insert')
+                        })
+                        if(!res){
+                            group.addClass('delete-Active')
+                            group.remove()
+                        }else{
+                            phraseGroup.push(group)
+                        }
+                    })
+                    const resHTML = phraseGroup.map((group, i)=>{
+                        const mergeCharacters = Object.assign([], group).reverse().map((curr,i)=>{
+                            return $(curr).text()
+                        })
+                        return `<text class="group">${mergeCharacters.join('')}</text>`
+                    }).join(`<text class="space"> </text>`)
+                    $('.show1').empty().append(resHTML)
+
+                    $('.show1 text.group').map((i,element)=>{
+                    $(element).fadeOut(1000, function(){
+                            $(this).text(template[i] + " ")
+                            $(this).fadeIn(200)
+                        })
+                    })
+
+                    // append phan tu con lai
+                    const start = $(`.show1`).find(`.group`).length
+                    let remainGroup = template.slice(start, template.length)
+                    $(remainGroup).each((i, group)=>{
+                        $('.show1').append(`<text class="group">${group}</text><text class="space"> </text>`)
+                    })
+                }, 3000)
+            }
+            return {
+                temp: temp,
+                handleAnswer: handleAnswer
+            }
+        })()
+
+        $(document).ready(()=>{
+            if(correctAnswerGame.temp.getTemplate() && correctAnswerGame.temp.getAnswer()){
+                $('#answerTemplate').val(correctAnswerGame.temp.getTemplate())
+                $('#userAnswer').val(correctAnswerGame.temp.getAnswer())
+            }
+        })
+
+        $('#btnSubmitAnswer').click(()=>{
+            $('.show1').empty()
+
+            const answerTemplate = $('#answerTemplate').val()
+            const userAnswer = $('#userAnswer').val()
+            correctAnswerGame.temp.saveTemp(answerTemplate, userAnswer)
+
+            if(answerTemplate == userAnswer){
+                $('#correctAudio')[0].play()
+            }else{
+                $('#inCorrectAudio')[0].play()
+                // Handling
+                setTimeout(() => {
+                    correctAnswerGame.handleAnswer(answerTemplate, userAnswer)
+                }, 1000);
+            }
+        })
+        
+
+        // sortAnswer()
+        function sortAnswer(){
+            const correct = "hi sandro where are"
+            const answer = "hi are where sandro"
+
+            const template = correct.split(' ').map((phrase, i)=>{
+                return phrase
+            })
+            const resultHTML = answer.split(' ').map((phrase, i)=>{
+                return `<text index=${i}>${phrase} </text>`
+            })
+            $('.show').append(resultHTML)
+            const outputArr = answer.split(' ')
+
+            // phan sort
+            // const temp = []
+            // for (let i = 0; i < template.length; i++) {
+            //    for (let j = 0; j < outputArr.length; j++) {
+            //         if(template[i] == outputArr[j])
+            //         {
+            //             temp.push(outputArr[j])
+            //         }
+            //    }
+            // }
+            
+            $('.show text').map((i,element)=>{
+                $(element).fadeOut(2000, function(){
+                    $(this).text(template[i] + " ")
+                    $(this).fadeIn(3000)
+                })
+            })
+        }
+    </script>
+</body>
+</html>
